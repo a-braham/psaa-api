@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 
     'psaa_api.apps.authentication',
+    'psaa_api.apps.schools',
 ]
 
 MIDDLEWARE = [
@@ -156,5 +157,5 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
-    )
+    ),
 }
