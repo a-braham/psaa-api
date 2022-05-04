@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 User = get_user_model()
 
@@ -88,3 +90,19 @@ class Student(models.Model):
             'name': self.school.name,
             'status': self.school.status,
         }
+
+
+@receiver(post_save, sender=Student)
+def enrollment(sender, instance, created, **kwargs):
+    if created:
+        school = School.objects.get(id=instance.school.id)
+        school.enrollments += 1
+        school.save()
+
+
+@receiver(post_save, sender=Student)
+def dropout(sender, instance, created, **kwargs):
+    if not instance._state.adding and instance.status == 'inactive':
+        school = School.objects.get(id=instance.school.id)
+        school.dropouts += 1
+        school.save()

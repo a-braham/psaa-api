@@ -86,18 +86,17 @@ class CreateGetStudentAPI(ListCreateAPIView):
         """Create a student"""
         student = request.data
         try:
-            print(student)
             id = kwargs['id']
             school_inst = RetrieveUpdateSchoolAPI()
             school = school_inst.retrieve_school(id)
             parent = User.objects.get(pk=student['parent'])
             request.POST._mutable = True
             user = request.user
-            student['user'] = user.id
-            student['parent'] = parent.id
-            student['school'] = school.id
             serializer = self.serializer_class(data=student)
             serializer.is_valid(raise_exception=True)
+            student = serializer.save(
+                user=user, parent=parent, school=school
+            )
             serializer.save()
             return Response(
                 serializer.data,
@@ -110,7 +109,7 @@ class CreateGetStudentAPI(ListCreateAPIView):
         """Get students"""
         page_limit = request.GET.get('page_limit')
         if not page_limit:
-            page_limit = 1
+            page_limit = 6
         else:
             error_response = Response(
                 data={
@@ -124,7 +123,7 @@ class CreateGetStudentAPI(ListCreateAPIView):
                 return error_response
         school_inst = RetrieveUpdateSchoolAPI()
         school = school_inst.retrieve_school(id)
-        students = Student.objects.filter(school=school)
+        students = Student.objects.filter(school=school, status='active')
         paginator = Paginator()
         paginator.page_size = page_limit
         result = paginator.paginate_queryset(students, request)
@@ -224,15 +223,15 @@ class RetrieveUpdateSchoolAPI(GenericAPIView):
 
 class DeleteStudentAPI(GenericAPIView):
     """Api for droping out students"""
-    permission_classes = (IsAuthenticated)
+    permission_classes = [IsAuthenticated]
     serializer_class = StudentSerializer
 
-    def delete(self, request, id):
+    def delete(self, request, id, student_id):
         """Drop a student"""
         try:
-            student = Student.objects.get(id=id)
+            student = Student.objects.get(id=student_id, school=id)
             if student:
-                student.active = 'inactive'
+                student.status = 'inactive'
                 student.save()
                 return Response(
                     {'message': 'Student dropped'},

@@ -22,8 +22,12 @@ auth = include(('psaa_api.apps.authentication.urls',
 school = include(('psaa_api.apps.schools.urls',
                  'schools'), namespace='schools')
 
+survey = include(('psaa_api.apps.surveys.urls',
+                 'surveys'), namespace='surveys')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', auth),
     path('api/', school),
+    path('api/', survey),
 ]

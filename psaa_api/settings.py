@@ -57,6 +57,7 @@ INSTALLED_APPS = [
 
     'psaa_api.apps.authentication',
     'psaa_api.apps.schools',
+    'psaa_api.apps.surveys',
 ]
 
 MIDDLEWARE = [
