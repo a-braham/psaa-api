@@ -7,6 +7,7 @@ def get_password_policy_errors(password):
     """
     stats = PasswordStats(password)
     errors = []
+
     if stats.letters_uppercase < 2:
         errors.append(
             "password should have at least 2 uppercase letters"
@@ -27,7 +28,7 @@ def get_password_policy_errors(password):
             "password should have at least 1 special character"
         )
 
-    get_repeating_password(stats, errors)
+    # get_repeating_password(stats, errors)
     return errors
 
 

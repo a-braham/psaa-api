@@ -31,14 +31,14 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return value
 
     username = serializers.RegexField(
-        regex='^(?!.*\ )[A-Za-z\d\-\_]+$',
+        regex='^(?!.*\.)[A-Za-z\d\-\_\ ]+$',
         required=True,
-        validators=[
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message='user with this username already exists',
-            )
-        ],
+        # validators=[
+        #     UniqueValidator(
+        #         queryset=User.objects.all(),
+        #         message='user with this username already exists',
+        #     )
+        # ],
         error_messages={
             'invalid': 'Username can only contain letters, numbers, underscores, and hyphens',
             'required': 'Username is a required field'
