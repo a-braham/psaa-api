@@ -11,6 +11,8 @@ class SchoolSerializer(BaseSerializer):
         super(SchoolSerializer, self).__init__(*args, **kwargs)
 
     user = serializers.ReadOnlyField(source='admin')
+    students = serializers.ReadOnlyField()
+    activities = serializers.ReadOnlyField()
 
     def get_school_by_admin(self):
         request = self.context.get('request', None)
@@ -27,7 +29,8 @@ class SchoolSerializer(BaseSerializer):
         model = School
         fields = (
             'id', 'name', 'user', 'description', 'province', 'district',
-            'enrollments', 'dropouts', 'status', 'created_at', 'updated_at'
+            'enrollments', 'dropouts', 'status', 'students', 'activities',
+            'created_at', 'updated_at'
         )
 
 

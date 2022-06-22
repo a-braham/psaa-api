@@ -17,7 +17,7 @@ User = get_user_model()
 class CreateGetSchoolAPI(ListCreateAPIView):
     """Create and get schools"""
 
-    permission_classes = (IsAuthenticatedOrReadOnly, )
+    permission_classes = [IsAuthenticated]
     serializer_class = SchoolSerializer
     queryset = School.objects.all()
 
@@ -46,7 +46,7 @@ class CreateGetSchoolAPI(ListCreateAPIView):
         """Get schools"""
         page_limit = request.GET.get('page_limit')
         if not page_limit:
-            page_limit = 1
+            page_limit = 100
         else:
             error_response = Response(
                 data={
@@ -78,7 +78,7 @@ class CreateGetSchoolAPI(ListCreateAPIView):
 class CreateGetStudentAPI(ListCreateAPIView):
     """Create and get students"""
 
-    permission_classes = (IsAuthenticatedOrReadOnly, )
+    permission_classes = [IsAuthenticated]
     serializer_class = StudentSerializer
     queryset = Student.objects.all()
 
@@ -142,7 +142,7 @@ class CreateGetStudentAPI(ListCreateAPIView):
 
 class RetrieveUpdateSchoolAPI(GenericAPIView):
     """Retrieve, update and delete a school"""
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = [IsAuthenticated]
     serializer_class = SchoolSerializer
 
     def retrieve_school(self, id):
@@ -229,11 +229,28 @@ class DeleteStudentAPI(GenericAPIView):
     def delete(self, request, id, student_id):
         """Drop a student"""
         try:
+            data = request.data
+            reason = data['reason']
+            if not reason:
+                return Response(
+                    data={
+                        "errors": {
+                            "error": [
+                                "Reason for dropping out must be provided"
+                            ]}
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
             student = Student.objects.get(id=student_id, school=id)
-            if student:
+            if student and student.status != 'inactive':
                 student.status = 'inactive'
+                student.comment = reason
                 student.save()
                 return Response(
+                    {'message': 'Student dropped'},
+                    status.HTTP_200_OK
+                )
+            return Response(
                     {'message': 'Student dropped'},
                     status.HTTP_200_OK
                 )

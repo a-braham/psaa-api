@@ -2,6 +2,10 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.core import serializers
+import json
+
+from psaa_api.apps.activities.models import Activity
 
 User = get_user_model()
 
@@ -33,6 +37,16 @@ class School(models.Model):
             'email': self.user.email,
             # 'phone_number': self.user.phone_number,
         }
+
+    def students(self):
+        school = self.id
+        students = Student.objects.filter(school=school).values()
+        return students
+
+    def activities(self):
+        school = self.id
+        activities = Activity.objects.filter(school=school).values()
+        return activities
 
 
 class Student(models.Model):
