@@ -53,6 +53,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(db_index=True, max_length=255)
     email = models.EmailField(db_index=True, unique=True)
+    phone_number = models.CharField(default='', max_length=100)
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -107,7 +108,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         token = jwt.encode(
             {
                 'user_data': user_details,
-                'exp': datetime.now() + timedelta(hours=24)
+                'exp': datetime.now() + timedelta(hours=720)
             }, settings.SECRET_KEY, algorithm='HS256'
         )
         return token

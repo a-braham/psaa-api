@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from .models import User
 from psaa_api.utils.password_validators import get_password_policy_errors
+from psaa_api.utils.baseserializer import BaseSerializer
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -104,7 +105,7 @@ class LoginSerializer(serializers.Serializer):
         }
 
 
-class UserSerializer(serializers.ModelSerializer):
+class AuthSerializer(serializers.ModelSerializer):
     """Handles serialization and deserialization of User objects."""
 
     password = serializers.CharField(
@@ -115,7 +116,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'token', 'password')
+        fields = ('id', 'email', 'username', 'token', 'password')
 
     def update(self, instance, validated_data):
         """Performs an update on a User."""
@@ -131,3 +132,17 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class UsersSerializer(BaseSerializer):
+    """Handles serialization and deserialization of User objects."""
+
+    def __init__(self, *args, **kwargs):
+        super(UsersSerializer, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'email', 'username', 'phone_number', 'is_active',
+            'is_staff', 'created_at', 'updated_at'
+        )

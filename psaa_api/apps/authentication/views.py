@@ -1,15 +1,18 @@
 from email import message
 from requests import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView, ListAPIView
 from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 
 from .serializers import (RegistrationSerializer,
-                          LoginSerializer, UserSerializer)
+                          LoginSerializer, AuthSerializer,
+                          UsersSerializer)
 from psaa_api.utils.authentication_handlers import AuthTokenHandler
 from .renderers import UserJSONRenderer
+from psaa_api.utils.paginator import (Paginator)
+from .exceptions import (UserNotFound)
 
 User = get_user_model()
 
@@ -54,13 +57,13 @@ class LoginAPI(GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class UserRetrieveUpdateAPI(RetrieveUpdateAPIView):
+class AuthRetrieveUpdateAPI(RetrieveUpdateAPIView):
     """
-    Retrieve and update users
+    Retrieve and update current user
     """
     permission_classes = (IsAuthenticated,)
     renderer_classes = (UserJSONRenderer,)
-    serializer_class = UserSerializer
+    serializer_class = AuthSerializer
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -83,3 +86,98 @@ class UserRetrieveUpdateAPI(RetrieveUpdateAPIView):
         serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UsersRetrieveUpdateAPI(ListAPIView):
+    """
+    Retrieve and update users
+    """
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (UserJSONRenderer,)
+    serializer_class = UsersSerializer
+    queryset = User.objects.all()
+
+    def get(self, request):
+        """Get users"""
+        page_limit = request.GET.get('page_limit')
+        if not page_limit:
+            page_limit = 100
+        else:
+            error_response = Response(
+                data={
+                    'details': 'Invalid page limit'
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+            if not page_limit.isdigit():
+                return error_response
+            elif int(page_limit) < 1:
+                return error_response
+        schools = self.filter_queryset(self.get_queryset())
+        paginator = Paginator()
+        paginator.page_size = page_limit
+        result = paginator.paginate_queryset(schools, request)
+        serializer = UsersSerializer(
+            result, many=True,
+            context={'request': request},
+        )
+        response = paginator.get_paginated_response({
+            'users': serializer.data
+        })
+        if response.get('dataCount') == 0:
+            response["message"] = "No data found"
+        return Response(response)
+
+
+class UserRetrieveUpdateAPI(RetrieveUpdateAPIView):
+    """Retrieve a user and update other user"""
+
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (UserJSONRenderer,)
+    serializer_class = UsersSerializer
+
+    def retrieve_user(self, id):
+        """Fetch one user"""
+        try:
+            user = User.objects.get(id=id)
+            return user
+        except User.DoesNotExist:
+            raise UserNotFound
+
+    def get(self, request, id):
+        """Get one user"""
+        user = self.retrieve_user(id)
+        if user:
+            serializer = self.serializer_class(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, id):
+        """Update user details"""
+        user = self.retrieve_user(id)
+        current_user = request.user
+        if user and user != current_user:
+            serializer = self.serializer_class(
+                instance=user,
+                data=request.data,
+                partial=True,
+                remove_fields=['created_at', 'updated_at'],
+                context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
+            data = serializer.data
+            return Response(
+                data={'user': data},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                data={
+                    "errors": {
+                        "error": [
+                            "Cannot edit this user!"
+                        ]
+                    }
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )

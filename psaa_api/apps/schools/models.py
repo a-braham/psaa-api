@@ -46,7 +46,15 @@ class School(models.Model):
     def activities(self):
         school = self.id
         activities = Activity.objects.filter(school=school).values()
-        return activities
+        data = []
+        for activity in activities:
+            student = Student.objects.get(pk=activity['student_id'])
+            activity['student'] = {
+                "id": student.id,
+                "name": student.name,
+            }
+            data.append(activity)
+        return data
 
 
 class Student(models.Model):
@@ -71,6 +79,7 @@ class Student(models.Model):
         blank=True,
         null=True
     )
+    email = models.EmailField(default='')
     status = models.CharField(max_length=100, default='active')
     comment = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

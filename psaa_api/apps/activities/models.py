@@ -25,6 +25,9 @@ class Activity(models.Model):
     create_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['create_at']
+
 
 @receiver(post_save, sender='schools.Student')
 def create_activity(sender, instance, created, **kwargs):
