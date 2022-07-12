@@ -98,6 +98,12 @@ class CreateGetStudentAPI(ListCreateAPIView):
                 user=user, parent=parent, school=school
             )
             serializer.save()
+            school = school_inst.retrieve_school(id)
+            serializer = SchoolSerializer(
+                school,
+                context={'school': id, 'request': request},
+                many=False
+            )
             return Response(
                 serializer.data,
                 status=status.HTTP_201_CREATED
