@@ -232,7 +232,15 @@ class DeleteStudentAPI(GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = StudentSerializer
 
-    def delete(self, request, id, student_id):
+    def retrieve_student(self, id):
+        """Fetch one student"""
+        try:
+            school = Student.objects.get(id=id)
+            return school
+        except School.DoesNotExist:
+            raise SchoolNotFound
+
+    def patch(self, request, id, student_id):
         """Drop a student"""
         try:
             data = request.data
@@ -247,17 +255,35 @@ class DeleteStudentAPI(GenericAPIView):
                     },
                     status=status.HTTP_403_FORBIDDEN
                 )
-            student = Student.objects.get(id=student_id, school=id)
+            school_inst = RetrieveUpdateSchoolAPI()
+            school = school_inst.retrieve_school(id)
+            student = self.retrieve_student(student_id)
             if student and student.status != 'inactive':
                 student.status = 'inactive'
                 student.comment = reason
                 student.save()
+                serializer = SchoolSerializer(
+                    school,
+                    context={'school': id, 'request': request},
+                    many=False
+                )
                 return Response(
-                    {'message': 'Student dropped'},
+                    {
+                        'students': serializer.data,
+                        'message': 'Student dropped'
+                    },
                     status.HTTP_200_OK
                 )
+            serializer = SchoolSerializer(
+                    school,
+                    context={'school': id, 'request': request},
+                    many=False
+                )   
             return Response(
-                    {'message': 'Student dropped'},
+                    {
+                        'students': serializer.data,
+                        'message': 'Student dropped'
+                    },
                     status.HTTP_200_OK
                 )
         except Student.DoesNotExist:
