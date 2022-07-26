@@ -1,14 +1,21 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView, GenericAPIView
+from rest_framework.generics import ListCreateAPIView, ListAPIView
 from rest_framework.permissions import (
-    IsAuthenticatedOrReadOnly
+    IsAuthenticatedOrReadOnly, IsAuthenticated
 )
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from psaa_api.apps.schools.models import School, Student
 
 from psaa_api.utils.paginator import (Paginator)
 from .models import (Survey)
+from psaa_api.apps.activities.models import (Activity)
 from .serializers import (SurveySerializer)
+
+from django.db.models import Count, Q
+from django.db import models
+from django.db.models import Func
 
 User = get_user_model()
 
@@ -16,7 +23,7 @@ User = get_user_model()
 class CreateGetSurveyAPI(ListCreateAPIView):
     """Create and get surveys"""
 
-    permission_classes = (IsAuthenticatedOrReadOnly, )
+    # permission_classes = (IsAuthenticatedOrReadOnly, )
     serializer_class = SurveySerializer
     queryset = Survey.objects.all()
 
@@ -69,3 +76,46 @@ class CreateGetSurveyAPI(ListCreateAPIView):
         if response.get('dataCount') == 0:
             response["message"] = "No data found"
         return Response(response)
+
+
+class StatisticsAPI(ListAPIView):
+    """ Get API statistics"""
+    permission_classes = [IsAuthenticated]
+    queryset = Survey.objects.all()
+
+    def get(self, request):
+        """Get statistics"""
+        enrollments_vs_dropouts = Activity.objects.filter(create_at__year='2022').annotate(month=Month('create_at')).values('month').annotate(total=Count('id'), enrollments=Count('id', filter=Q(type='Enrollment')), dropouts=Count('id', filter=Q(type='Drop out'))).order_by('month')
+        drop_out_by_gender = Student.objects.values('gender').order_by('gender').annotate(count=Count('gender'))
+        drop_out_by_causes = Student.objects.values('comment').order_by('comment').annotate(count=Count('comment'))
+        schools = Student.objects.values('school').order_by('school').annotate(count=Count('school'))
+        
+        data = []
+        for school in schools:
+            school_obj = School.objects.get(pk=school['school'])
+            school['school'] = {
+                "id": school_obj.id,
+                "name": school_obj.name,
+            }
+            data.append(school)
+        # schools_inaccessibility_rate_by_districts = 
+        surveys = Survey.objects.count()
+        users = User.objects.count()
+        schools = School.objects.count()
+        return Response(
+            {'statistics': {
+                'surveys': surveys,
+                'users': users,
+                'schools': schools,
+                'enrollments_vs_dropouts': enrollments_vs_dropouts,
+                'drop_out_by_gender': drop_out_by_gender,
+                'drop_out_by_causes': drop_out_by_causes,
+                'drop_out_by_school': data
+            }},
+            status=status.HTTP_200_OK
+        )
+
+class Month(Func):
+    function = 'to_char'
+    template = "TRIM(%(function)s(%(expressions)s, 'Month'))"
+    output_field = models.CharField()

@@ -31,5 +31,39 @@ class Survey(models.Model):
             'id': self.user.id,
             'username': self.user.username,
             'email': self.user.email,
-            # 'phone_number': self.user.phone_number,
+            'phone_number': self.user.phone_number,
         }
+
+    # def total_surveys(self):
+    #     """Get total surveys"""
+    #     surveys = Survey.objects.count()
+    #     return surveys
+
+    # def total_users(self):
+    #     """Get total users"""
+    #     users = User.objects.count()
+    #     return users
+
+    # def total_schools(self):
+    #     """Get total schools"""
+    #     pass
+
+    # def drop_outs_vs_enrollments(self):
+    #     """Get drops outs vs enrollments"""
+    #     pass
+
+    # def drop_out_by_gender(self):
+    #     """Get drop outs by gender"""
+    #     pass
+
+    # def drop_out_causes(self):
+    #     """Get drop out causes"""
+    #     pass
+
+    # def drop_out_by_school(self):
+    #     """Get drop outs by school"""
+    #     pass
+
+    # def schools_inaccessibility_rate_by_districts(self):
+    #     """Get schools inaccessibility rate by districts"""
+    #     pass

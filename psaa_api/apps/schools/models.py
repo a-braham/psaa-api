@@ -5,6 +5,8 @@ from django.dispatch import receiver
 from django.core import serializers
 import json
 
+from sqlalchemy import true
+
 from psaa_api.apps.activities.models import Activity
 
 User = get_user_model()
@@ -61,6 +63,7 @@ class Student(models.Model):
     """Model for students"""
     name = models.CharField(max_length=255)
     birth_date = models.DateTimeField(null=False, blank=False)
+    gender = models.CharField(max_length=100, blank=True, null=True)
     level = models.CharField(max_length=100)
     user = models.ForeignKey(
         User, related_name='created_by',
