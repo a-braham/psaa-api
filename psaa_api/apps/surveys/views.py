@@ -1,17 +1,15 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, ListAPIView
-from rest_framework.permissions import (
-    IsAuthenticatedOrReadOnly, IsAuthenticated
-)
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from psaa_api.apps.schools.models import School, Student
 
-from psaa_api.utils.paginator import (Paginator)
-from .models import (Survey)
-from psaa_api.apps.activities.models import (Activity)
-from .serializers import (SurveySerializer)
+from psaa_api.utils.paginator import Paginator
+from .models import Survey
+from psaa_api.apps.activities.models import Activity
+from .serializers import SurveySerializer
 
 from django.db.models import Count, Q
 from django.db import models
@@ -33,28 +31,23 @@ class CreateGetSurveyAPI(ListCreateAPIView):
         user = request.user
         serializer = self.serializer_class(
             data=survey,
-            remove_fields=['created_at', 'updated_at'],
-            context={'request': request}
+            remove_fields=["created_at", "updated_at"],
+            context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
         survey = serializer.save(user=user)
         data = serializer.data
 
-        return Response(
-            data=data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(data=data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
         """Get surveys"""
-        page_limit = request.GET.get('page_limit')
+        page_limit = request.GET.get("page_limit")
         if not page_limit:
             page_limit = 1
         else:
             error_response = Response(
-                data={
-                    'details': 'Invalid page limit'
-                },
+                data={"details": "Invalid page limit"},
                 status=status.HTTP_404_NOT_FOUND,
             )
             if not page_limit.isdigit():
@@ -66,56 +59,84 @@ class CreateGetSurveyAPI(ListCreateAPIView):
         paginator.page_size = page_limit
         result = paginator.paginate_queryset(surveys, request)
         serializer = SurveySerializer(
-            result, many=True,
-            context={'request': request},
-            remove_fields=['updated_at']
+            result,
+            many=True,
+            context={"request": request},
+            remove_fields=["updated_at"],
         )
-        response = paginator.get_paginated_response({
-            'surveys': serializer.data
-        })
-        if response.get('dataCount') == 0:
+        response = paginator.get_paginated_response({"surveys": serializer.data})
+        if response.get("dataCount") == 0:
             response["message"] = "No data found"
         return Response(response)
 
 
 class StatisticsAPI(ListAPIView):
     """ Get API statistics"""
-    permission_classes = [IsAuthenticated]
+
+    # permission_classes = [IsAuthenticated]
     queryset = Survey.objects.all()
 
     def get(self, request):
         """Get statistics"""
-        enrollments_vs_dropouts = Activity.objects.filter(create_at__year='2022').annotate(month=Month('create_at')).values('month').annotate(total=Count('id'), enrollments=Count('id', filter=Q(type='Enrollment')), dropouts=Count('id', filter=Q(type='Drop out'))).order_by('month')
-        drop_out_by_gender = Student.objects.values('gender').order_by('gender').annotate(count=Count('gender'))
-        drop_out_by_causes = Student.objects.values('comment').order_by('comment').annotate(count=Count('comment'))
-        schools = Student.objects.values('school').order_by('school').annotate(count=Count('school'))
-        
+        enrollments_vs_dropouts = (
+            Activity.objects.filter(create_at__year="2022")
+            .annotate(month=Month("create_at"))
+            .values("month")
+            .annotate(
+                total=Count("id"),
+                enrollments=Count("id", filter=Q(type="Enrollment")),
+                dropouts=Count("id", filter=Q(type="Drop out")),
+            )
+            .order_by("month")
+        )
+        drop_out_by_gender = (
+            Student.objects.values("gender")
+            .order_by("gender")
+            .annotate(count=Count("gender"))
+        )
+        drop_out_by_causes = (
+            Student.objects.filter(status='inactive')
+            .values("comment")
+            .order_by("comment")
+            .annotate(count=Count("comment"))
+        )
+        schools = (
+            Student.objects.filter(status='inactive').values("school")
+            .order_by("school")
+            .annotate(count=Count("school"))
+        )
+
         data = []
         for school in schools:
-            school_obj = School.objects.get(pk=school['school'])
-            school['school'] = {
+            school_obj = School.objects.get(pk=school["school"])
+            school["school"] = {
                 "id": school_obj.id,
                 "name": school_obj.name,
+                "province": school_obj.province,
+                "district": school_obj.district,
             }
             data.append(school)
-        # schools_inaccessibility_rate_by_districts = 
+        # schools_inaccessibility_rate_by_districts =
         surveys = Survey.objects.count()
         users = User.objects.count()
         schools = School.objects.count()
         return Response(
-            {'statistics': {
-                'surveys': surveys,
-                'users': users,
-                'schools': schools,
-                'enrollments_vs_dropouts': enrollments_vs_dropouts,
-                'drop_out_by_gender': drop_out_by_gender,
-                'drop_out_by_causes': drop_out_by_causes,
-                'drop_out_by_school': data
-            }},
-            status=status.HTTP_200_OK
+            {
+                "statistics": {
+                    "surveys": surveys,
+                    "users": users,
+                    "schools": schools,
+                    "enrollments_vs_dropouts": enrollments_vs_dropouts,
+                    "drop_out_by_gender": drop_out_by_gender,
+                    "drop_out_by_causes": drop_out_by_causes,
+                    "drop_out_by_school": data,
+                }
+            },
+            status=status.HTTP_200_OK,
         )
 
+
 class Month(Func):
-    function = 'to_char'
+    function = "to_char"
     template = "TRIM(%(function)s(%(expressions)s, 'Month'))"
     output_field = models.CharField()
