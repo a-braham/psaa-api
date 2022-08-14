@@ -4,6 +4,8 @@ from rest_framework.permissions import (IsAuthenticated)
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 
+from psaa_api.utils.mailer import RegistrationMail
+
 from .models import School, Student
 from .serializers import (SchoolSerializer, StudentSerializer)
 from .exceptions import (SchoolNotFound, StudentDoesNotExist)
@@ -34,6 +36,8 @@ class CreateGetSchoolAPI(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         school = serializer.save(user=user)
         data = serializer.data
+
+        RegistrationMail(data).send_mail()
 
         return Response(
             data=data,
