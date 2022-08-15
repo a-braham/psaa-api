@@ -1,7 +1,12 @@
+from email import message
+import email
 import jwt
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import authentication, exceptions
-from .models import User
+from rest_framework.permissions import BasePermission, IsAuthenticated
+from .models import User, Role, Permission
+from .exceptions import (RoleNotFound, UserNotFound)
 
 """Configure JWT Here"""
 
@@ -68,3 +73,25 @@ class JWTAuthentication(authentication.BaseAuthentication):
             )
 
         return user, token
+
+
+class Permissions(BasePermission):
+    """
+    Allow access based roles assigned.
+    """
+    def __init__(self, roles):
+        try:
+            self.roles = Role.objects.filter(name__in=roles)
+        except Exception as exc:
+            raise RoleNotFound from exc
+
+    def __call__(self):
+        return self
+
+    def has_permission(self, request, view):
+        if request.user == AnonymousUser():
+            raise UserNotFound
+        permissions = Permission.objects.filter(
+            role__in=self.roles, user=request.user
+        )
+        return bool(permissions)

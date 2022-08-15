@@ -2,7 +2,7 @@ from email import message
 from requests import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView, ListAPIView
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 

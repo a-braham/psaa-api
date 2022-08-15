@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from psaa_api.apps.schools.models import School, Student
+from psaa_api.apps.authentication.backends import Permissions
 
 from psaa_api.utils.paginator import Paginator
 from .models import Survey
@@ -73,11 +74,12 @@ class CreateGetSurveyAPI(ListCreateAPIView):
 class StatisticsAPI(ListAPIView):
     """ Get API statistics"""
 
-    # permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated, Permissions(['admin']))
     queryset = Survey.objects.all()
 
     def get(self, request):
         """Get statistics"""
+        # Permissions(['admin']).has_permission(request)
         enrollments_vs_dropouts = (
             Activity.objects.filter(create_at__year="2022")
             .annotate(month=Month("create_at"))

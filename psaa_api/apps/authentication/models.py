@@ -1,3 +1,5 @@
+from pyexpat import model
+from unicodedata import name
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
@@ -112,3 +114,38 @@ class User(AbstractBaseUser, PermissionsMixin):
             }, settings.SECRET_KEY, algorithm='HS256'
         )
         return token
+
+
+class Role(models.Model):
+    """
+    Roles models
+    """
+    name = models.CharField(
+        unique=True, null=False,
+        blank=False, max_length=100
+    )
+    description = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "roles"
+
+
+class Permission(models.Model):
+    """
+    Permissions models to allow users based on roles.
+    """
+    role = models.ForeignKey(
+        Role, related_name='permission_role',
+        on_delete=models.CASCADE, null=False
+    )
+    user = models.ForeignKey(
+        User, related_name='permission_user',
+        on_delete=models.CASCADE, null=False
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "permissions"
