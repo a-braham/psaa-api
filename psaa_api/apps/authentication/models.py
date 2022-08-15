@@ -149,3 +149,19 @@ class Permission(models.Model):
 
     class Meta:
         db_table = "permissions"
+
+    def get_role(self):
+        """Get roles of the user"""
+        return {
+            'id': self.role.id,
+            'name': self.role.name,
+            'description': self.role.description,
+        }
+
+    def get_user(self):
+        """Get the user"""
+        return {
+            'id': self.user.id,
+            'username': self.user.username,
+            'email': self.user.email,
+        }

@@ -50,7 +50,9 @@ class School(models.Model):
         activities = Activity.objects.filter(school=school).values()
         data = []
         for activity in activities:
-            student = Student.objects.get(pk=activity['student_id'])
+            student = Student.objects.get(
+                pk=activity['student_id']
+            )
             activity['student'] = {
                 "id": student.id,
                 "name": student.name,
@@ -69,10 +71,7 @@ class Student(models.Model):
         User, related_name='created_by',
         on_delete=models.SET_NULL, null=True
     )
-    parent = models.ForeignKey(
-        User, related_name='parent',
-        on_delete=models.DO_NOTHING, null=False
-    )
+    parent = models.CharField(max_length=255)
     school = models.ForeignKey(
         School, related_name='school',
         on_delete=models.DO_NOTHING, null=False
@@ -131,4 +130,5 @@ def dropout(sender, instance, created, **kwargs):
     if not instance._state.adding and instance.status == 'inactive':
         school = School.objects.get(id=instance.school.id)
         school.dropouts += 1
+        school.enrollments -=1
         school.save()

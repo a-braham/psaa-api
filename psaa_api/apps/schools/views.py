@@ -91,13 +91,13 @@ class CreateGetStudentAPI(ListCreateAPIView):
             id = kwargs['id']
             school_inst = RetrieveUpdateSchoolAPI()
             school = school_inst.retrieve_school(id)
-            parent = User.objects.get(pk=student['parent'])
+            # parent = User.objects.get(pk=student['parent'])
             request.POST._mutable = True
             user = request.user
             serializer = self.serializer_class(data=student)
             serializer.is_valid(raise_exception=True)
             student = serializer.save(
-                user=user, parent=parent, school=school
+                user=user, school=school
             )
             serializer.save()
             school = school_inst.retrieve_school(id)

@@ -1,9 +1,9 @@
 from django.urls import path
 
 from .views import (
-    RegistrationAPI, LoginAPI,
+    GetRolesAPI, RegistrationAPI, LoginAPI,
     AuthRetrieveUpdateAPI, UsersRetrieveUpdateAPI,
-    UserRetrieveUpdateAPI
+    UserRetrieveUpdateAPI, GetRolesAPI
 )
 
 app_name = 'authentication'
@@ -14,4 +14,5 @@ urlpatterns = [
     path('auth/', AuthRetrieveUpdateAPI.as_view(), name='auth'),
     path('users/', UsersRetrieveUpdateAPI.as_view(), name='users'),
     path('users/<id>', UserRetrieveUpdateAPI.as_view(), name='user'),
+    path('roles/', GetRolesAPI.as_view(), name='roles')
 ]

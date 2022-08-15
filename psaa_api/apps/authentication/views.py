@@ -8,11 +8,12 @@ from django.contrib.auth import get_user_model
 
 from .serializers import (RegistrationSerializer,
                           LoginSerializer, AuthSerializer,
-                          UsersSerializer)
+                          UsersSerializer, RolesSerializer)
 from psaa_api.utils.authentication_handlers import AuthTokenHandler
 from .renderers import UserJSONRenderer
 from psaa_api.utils.paginator import (Paginator)
-from .exceptions import (UserNotFound)
+from .exceptions import (UserNotFound, RoleNotFound)
+from .models import User, Role, Permission
 
 User = get_user_model()
 
@@ -24,11 +25,17 @@ class RegistrationAPI(GenericAPIView):
     serializer_class = RegistrationSerializer
 
     def post(self, request):
+        try:
+            roles = Role.objects.filter(name__in=['volunteer'])
+        except Exception as exc:
+            raise RoleNotFound from exc
         data = request.data
         serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         user = User.objects.get(email=data.get("email"))
+        for role in roles:
+            Permission.objects.create(user=user, role=role)
         token = AuthTokenHandler.create_auth_token(user)
         data["token"] = token.key
         message = {
@@ -181,3 +188,28 @@ class UserRetrieveUpdateAPI(RetrieveUpdateAPIView):
                 },
                 status=status.HTTP_403_FORBIDDEN
             )
+
+
+class GetRolesAPI(RetrieveUpdateAPIView):
+    """
+    Retrieve roles
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = RolesSerializer
+
+    def get(self, request):
+        """
+        Get user roles
+        """
+        roles = Permission.objects.filter(
+            user=request.user)
+        serializer = self.serializer_class(
+            roles,
+            many=True,
+            context={"request": request}
+        )
+
+        return Response(
+            data={"roles": serializer.data},
+            status=status.HTTP_200_OK
+        )

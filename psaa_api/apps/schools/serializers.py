@@ -40,7 +40,7 @@ class StudentSerializer(BaseSerializer):
         super(StudentSerializer, self).__init__(*args, **kwargs)
 
     user = serializers.ReadOnlyField(source='admin')
-    parent = serializers.ReadOnlyField(source='get_parent')
+    # parent = serializers.ReadOnlyField(source='get_parent')
     school = serializers.ReadOnlyField(source='get_school')
 
     class Meta:

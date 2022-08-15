@@ -146,3 +146,19 @@ class UsersSerializer(BaseSerializer):
             'id', 'email', 'username', 'phone_number', 'is_active',
             'is_staff', 'created_at', 'updated_at'
         )
+
+
+class RolesSerializer(BaseSerializer):
+    """Handles serialization and deserialization of roles objects."""
+
+    def __init__(self, *args, **kwargs):
+        super(RolesSerializer, self).__init__(*args, **kwargs)
+
+    user = serializers.ReadOnlyField(source='get_user')
+    role = serializers.ReadOnlyField(source='get_role')
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'user', 'role', 'created_at', 'updated_at'
+        )

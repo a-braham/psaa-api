@@ -74,7 +74,7 @@ class CreateGetSurveyAPI(ListCreateAPIView):
 class StatisticsAPI(ListAPIView):
     """ Get API statistics"""
 
-    permission_classes = (IsAuthenticated, Permissions(['admin']))
+    permission_classes = (IsAuthenticated, Permissions(['super_admin', 'admin', 'volunteer']))
     queryset = Survey.objects.all()
 
     def get(self, request):
