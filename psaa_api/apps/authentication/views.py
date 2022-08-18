@@ -1,5 +1,7 @@
 from email import message
+from webbrowser import get
 from requests import Response
+from ..schools.models import School
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView, ListAPIView
 from rest_framework import status, permissions
@@ -61,7 +63,35 @@ class LoginAPI(GenericAPIView):
 
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+
+        def get_roles():
+            """Get roles of the user"""
+            permissions = Permission.objects.filter(user_id=serializer.data['id']).values()
+            roles = []
+            for permission in permissions:
+                role = Role.objects.get(
+                    pk=permission['role_id']
+                )
+                role = {
+                    "id": role.id,
+                    "name": role.name,
+                }
+                roles.append(role)
+            return roles
+        try:
+            school = School.objects.get(user_id=serializer.data['id'])
+            if school:
+                data = serializer.data
+                data['school'] = {
+                    'id': school.id,
+                    'name': school.name
+                }
+        except School.DoesNotExist:
+            exit
+        roles = get_roles()
+        data['roles'] = roles
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class AuthRetrieveUpdateAPI(RetrieveUpdateAPIView):
@@ -78,7 +108,19 @@ class AuthRetrieveUpdateAPI(RetrieveUpdateAPIView):
         """
         serializer = self.serializer_class(request.user)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            school = School.objects.get(user=request.user)
+            data = serializer.data
+            data['school'] = {
+                'id': school.id,
+                'name': school.name
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+        except School.DoesNotExist:
+            data = serializer.data
+            data['school'] = {}
+            return Response(data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
         """

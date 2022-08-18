@@ -8,6 +8,8 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 
+# from psaa_api.apps.schools.models import School
+
 
 class UserManager(BaseUserManager):
     """
@@ -114,6 +116,21 @@ class User(AbstractBaseUser, PermissionsMixin):
             }, settings.SECRET_KEY, algorithm='HS256'
         )
         return token
+
+    def get_roles(self):
+        """Get roles of the user"""
+        permissions = Permission.objects.filter(user=self.pk).values()
+        data = []
+        for permission in permissions:
+            role = Role.objects.get(
+                pk=permission['role_id']
+            )
+            role = {
+                "id": role.id,
+                "name": role.name,
+            }
+            data.append(role)
+        return data
 
 
 class Role(models.Model):
