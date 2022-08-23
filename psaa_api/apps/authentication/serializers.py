@@ -56,6 +56,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     email = serializers.CharField(
         max_length=255, allow_blank=True)
     username = serializers.CharField(max_length=255, read_only=True)
@@ -99,6 +100,7 @@ class LoginSerializer(serializers.Serializer):
             )
 
         return {
+            'id': user.id,
             'email': user.email,
             'username': user.username,
             'token': user.token,
@@ -113,10 +115,11 @@ class AuthSerializer(serializers.ModelSerializer):
         min_length=8,
         write_only=True
     )
+    roles = serializers.ReadOnlyField(source='get_roles')
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'token', 'password')
+        fields = ('id', 'email', 'username', 'token', 'password', 'roles')
 
     def update(self, instance, validated_data):
         """Performs an update on a User."""
