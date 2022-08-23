@@ -1,3 +1,5 @@
+from psaa_api.apps.authentication.exceptions import RoleNotFound
+from psaa_api.apps.authentication.models import Permission, Role
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, GenericAPIView
 from rest_framework.permissions import (IsAuthenticated)
@@ -28,6 +30,12 @@ class CreateGetSchoolAPI(ListCreateAPIView):
         user, created = User.objects.get_or_create(**user)
         user.set_password('12345')
         user.save()
+        try:
+            roles = Role.objects.filter(name__in=['admin'])
+        except Exception as exc:
+            raise RoleNotFound from exc
+        for role in roles:
+            Permission.objects.create(user=user, role=role)
         serializer = self.serializer_class(
             data=school,
             remove_fields=['created_at', 'updated_at'],
