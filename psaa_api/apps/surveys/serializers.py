@@ -26,6 +26,5 @@ class SurveySerializer(BaseSerializer):
     class Meta:
         model = Survey
         fields = (
-            'id', 'type', 'user', 'name', 'reason', 'description', 'province',
-            'district', 'birth_date', 'gender', 'created_at', 'updated_at'
+            'id', 'type', 'user', 'name', 'reason', 'description', 'isibo', 'birth_date', 'gender', 'parent', 'phone_number', 'created_at', 'updated_at'
         )

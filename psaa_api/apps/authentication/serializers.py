@@ -143,6 +143,8 @@ class UsersSerializer(BaseSerializer):
     def __init__(self, *args, **kwargs):
         super(UsersSerializer, self).__init__(*args, **kwargs)
 
+    # role = serializers.ReadOnlyField(source='get_roles')
+
     class Meta:
         model = User
         fields = (

@@ -62,6 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    gender = models.CharField(blank=True, null=True, max_length=100 )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -77,7 +78,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         This string is used when a `User` is printed in the console.
         """
         return self.email
-
+    def save_user(self):
+        return self.save()  
     @property
     def get_full_name(self):
         """
@@ -120,7 +122,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_roles(self):
         """Get roles of the user"""
-        permissions = Permission.objects.filter(user=self.pk).values()
+        user = self.id
+        permissions = Permission.objects.filter(user_id=user).values()
         data = []
         for permission in permissions:
             role = Role.objects.get(

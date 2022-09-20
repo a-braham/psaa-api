@@ -45,7 +45,7 @@ class CreateGetSurveyAPI(ListCreateAPIView):
         """Get surveys"""
         page_limit = request.GET.get("page_limit")
         if not page_limit:
-            page_limit = 1
+            page_limit = 50
         else:
             error_response = Response(
                 data={"details": "Invalid page limit"},
@@ -65,10 +65,13 @@ class CreateGetSurveyAPI(ListCreateAPIView):
             context={"request": request},
             remove_fields=["updated_at"],
         )
-        response = paginator.get_paginated_response({"surveys": serializer.data})
-        if response.get("dataCount") == 0:
-            response["message"] = "No data found"
-        return Response(response)
+        # response = paginator.get_paginated_response({"surveys": serializer.data})
+        # if response.get("dataCount") == 0:
+        #     response["message"] = "No data found"
+        # return Response(response)
+        data = serializer.data
+
+        return Response(data=data, status=status.HTTP_200_OK)
 
 
 class StatisticsAPI(ListAPIView):
@@ -76,7 +79,7 @@ class StatisticsAPI(ListAPIView):
 
     permission_classes = (
         IsAuthenticated,
-        Permissions(['super_admin', 'admin', 'volunteer'])
+        Permissions(['super_admin', 'school_admin'])
     )
     queryset = Survey.objects.all()
 

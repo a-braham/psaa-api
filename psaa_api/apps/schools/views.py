@@ -1,3 +1,4 @@
+from psaa_api.apps.activities.models import Activity
 from psaa_api.apps.authentication.exceptions import RoleNotFound
 from psaa_api.apps.authentication.models import Permission, Role
 from rest_framework import status
@@ -8,9 +9,9 @@ from django.contrib.auth import get_user_model
 
 from psaa_api.utils.mailer import RegistrationMail
 
-from .models import School, Student
-from .serializers import (SchoolSerializer, StudentSerializer)
-from .exceptions import (SchoolNotFound, StudentDoesNotExist)
+from .models import Isibo, IsiboUsers, School, Student
+from .serializers import (IsiboSerializer, SchoolSerializer, StudentSerializer)
+from .exceptions import (IsiboNotFound, SchoolNotFound, StudentDoesNotExist)
 from psaa_api.utils.paginator import (Paginator)
 
 User = get_user_model()
@@ -31,7 +32,7 @@ class CreateGetSchoolAPI(ListCreateAPIView):
         user.set_password('12345')
         user.save()
         try:
-            roles = Role.objects.filter(name__in=['admin'])
+            roles = Role.objects.filter(name__in=['teacher'])
         except Exception as exc:
             raise RoleNotFound from exc
         for role in roles:
@@ -42,7 +43,7 @@ class CreateGetSchoolAPI(ListCreateAPIView):
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        school = serializer.save(user=user)
+        school = serializer.save(user=user, teacher=user)
         data = serializer.data
 
         RegistrationMail(data).send_mail()
@@ -107,6 +108,7 @@ class CreateGetStudentAPI(ListCreateAPIView):
             student = serializer.save(
                 user=user, school=school
             )
+            IsiboUsers.objects.create(student=student, isibo=student.isibo)
             serializer.save()
             school = school_inst.retrieve_school(id)
             serializer = SchoolSerializer(
@@ -298,3 +300,64 @@ class DeleteStudentAPI(GenericAPIView):
                 )
         except Student.DoesNotExist:
             raise StudentDoesNotExist
+
+
+class RetrieveIsiboAPI(GenericAPIView):
+    """Retrieve an isibo"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = IsiboSerializer
+
+    def retrieve_isibo(self, id):
+        """Fetch one isibo"""
+        try:
+            isibo = Isibo.objects.get(id=id)
+            return isibo
+        except Isibo.DoesNotExist:
+            raise IsiboNotFound
+
+    def get(self, request, id):
+        """Get one isibo"""
+        isibo = self.retrieve_isibo(id)
+        if isibo:
+            serializer = IsiboSerializer(
+                isibo,
+                context={'isibo': id, 'request': request},
+                many=False
+            )
+            data = serializer.data
+            data['isibo'] = {
+                'id': isibo.id,
+                'name': isibo.name,
+            }
+            try:
+                activities = Activity.objects.filter(isibo=isibo).values()
+                data['activities'] = []
+                for activity in activities:
+                    student = Student.objects.get(pk=activity['student_id'])
+                    if student:
+                        activity['student'] = {
+                            "id": student.id,
+                            "name": student.name,
+                            "gender": student.gender,
+                            "birth_date": student.birth_date,
+                            "email": student.email,
+                            "parent": student.parent,
+                            "phone_number": student.phone_number
+                        }
+                    teacher = User.objects.get(pk=activity['user_id'])
+                    if teacher:
+                        activity['teacher'] = {
+                            "id": teacher.id,
+                            "name": teacher.username,
+                            "email": teacher.email
+                        }
+                    data['activities'].append(activity)
+                return Response(
+                    data,
+                    status=status.HTTP_200_OK
+                )
+            except Activity.DoesNotExist:
+                return Response(
+                    data,
+                    status=status.HTTP_200_OK
+                )

@@ -1,7 +1,7 @@
 from email import message
 from webbrowser import get
 from requests import Response
-from ..schools.models import School
+from ..schools.models import Isibo, School
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView, ListAPIView
 from rest_framework import status, permissions
@@ -110,17 +110,45 @@ class AuthRetrieveUpdateAPI(RetrieveUpdateAPIView):
 
         try:
             school = School.objects.get(user=request.user)
+            teacher = User.objects.get(id=school.teacher_id)
             data = serializer.data
             data['school'] = {
                 'id': school.id,
-                'name': school.name
+                'name': school.name,
+                'teacher': {
+                    'id': teacher.id,
+                    'username': teacher.username,
+                    'email': teacher.email
+                }
             }
-
-            return Response(data, status=status.HTTP_200_OK)
+            try:
+                isibo = Isibo.objects.get(user_id=serializer.data['id'])
+                data['isibo'] = {
+                    'id': isibo.id,
+                    'name': isibo.name,
+                    'admin': serializer.data['username']
+                }
+                return Response(data, status=status.HTTP_200_OK)
+            except Isibo.DoesNotExist:
+                return Response(data, status=status.HTTP_200_OK)
         except School.DoesNotExist:
             data = serializer.data
-            data['school'] = {}
-            return Response(data, status=status.HTTP_200_OK)
+            try:
+                myClass = School.objects.get(teacher_id=serializer.data['id'])
+                data['school'] = {
+                    'id': myClass.id,
+                    'name': myClass.name,
+                    # 'isibo': {
+                    #     'id': myClass.isibo.id,
+                    #     'name': myClass.isibo.name
+                    # }
+                }
+                return Response(data, status=status.HTTP_200_OK)
+
+            except School.DoesNotExist:
+                data = serializer.data
+                data['school'] = {}
+                return Response(data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
         """
